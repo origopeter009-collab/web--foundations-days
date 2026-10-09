@@ -9,12 +9,12 @@ const notes = [
 
 const CATEGORIES = ["personal", "work", "study"];
 
-// Lowercase, trim and collapse repeated spaces so comparisons ignore case and extra spaces
+// Trim, collapse repeated spaces and lower-case so comparisons ignore case and extra spaces
 function normalize(text) {
   return text.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
-// Returns notes whose text contains the word (case-insensitive)
+// Returns an array of notes whose text contains the word, ignoring case
 function searchNotes(word) {
   const term = word.toLowerCase();
   return notes.filter(function (note) {
@@ -27,35 +27,41 @@ function longestNote() {
   if (notes.length === 0) {
     return null;
   }
-  return notes.reduce(function (longest, note) {
-    return note.text.length > longest.text.length ? note : longest;
-  });
+  let longest = notes[0];
+  for (const note of notes) {
+    if (note.text.length > longest.text.length) {
+      longest = note;
+    }
+  }
+  return longest;
 }
 
 // Returns an object counting notes per category, e.g. { personal: 2, work: 1, study: 2 }
 function countByCategory() {
   const counts = {};
   for (const note of notes) {
-    counts[note.category] = (counts[note.category] || 0) + 1;
+    if (counts[note.category] === undefined) {
+      counts[note.category] = 0;
+    }
+    counts[note.category] += 1;
   }
   return counts;
 }
 
 // Returns a sentence such as "5 notes: 2 personal, 1 work, 2 study."
 function getSummary() {
-  const total = notes.length;
-  const label = total === 1 ? "note" : "notes";
-  if (total === 0) {
+  if (notes.length === 0) {
     return "0 notes.";
   }
   const counts = countByCategory();
   const parts = Object.keys(counts).map(function (category) {
-    return counts[category] + " " + category;
+    return `${counts[category]} ${category}`;
   });
-  return total + " " + label + ": " + parts.join(", ") + ".";
+  const noun = notes.length === 1 ? "note" : "notes";
+  return `${notes.length} ${noun}: ${parts.join(", ")}.`;
 }
 
-// True if a note with the same text exists (ignoring case and extra spaces)
+// Returns true if a note with the same text already exists (ignoring case and extra spaces)
 function isDuplicate(text) {
   const target = normalize(text);
   return notes.some(function (note) {
@@ -86,31 +92,40 @@ function addNote(text, category) {
 }
 
 // ---------- Tests ----------
-console.log("--- searchNotes ---");
-console.log("searchNotes('array') -> expect notes 3 and 5:", searchNotes("array"));
-console.log("searchNotes('ARRAY') -> same result (ignores case):", searchNotes("ARRAY"));
-console.log("searchNotes('zzz') -> expect []:", searchNotes("zzz"));
 
-console.log("--- longestNote ---");
-console.log("longestNote() -> expect note 1 (26 characters):", longestNote());
-const backup = notes.splice(0, notes.length);
-console.log("longestNote() with no notes -> expect null:", longestNote());
-notes.push(...backup);
+// searchNotes
+console.log(searchNotes("array"));  // Expected: notes 3 and 5 (arrays / array)
+console.log(searchNotes("ARRAY"));  // Expected: same two notes (case is ignored)
+console.log(searchNotes("zzz"));    // Expected: [] (no results)
 
-console.log("--- countByCategory ---");
-console.log("countByCategory() -> expect { personal: 2, work: 1, study: 2 }:", countByCategory());
+// longestNote
+console.log(longestNote());         // Expected: { id: 1, text: "Buy groceries for the week", category: "personal" }
+const saved = notes.splice(0);      // temporarily empty the array
+console.log(longestNote());         // Expected: null (no notes)
 
-console.log("--- getSummary ---");
-console.log("getSummary() -> expect '5 notes: 2 personal, 1 work, 2 study.':", getSummary());
+// countByCategory (array is still empty here)
+console.log(countByCategory());     // Expected: {} (no notes)
+notes.push(...saved);               // restore the notes
+console.log(countByCategory());     // Expected: { personal: 2, work: 1, study: 2 }
 
-console.log("--- isDuplicate ---");
-console.log("isDuplicate('  call THE   dentist ') -> expect true:", isDuplicate("  call THE   dentist "));
-console.log("isDuplicate('Water the plants') -> expect false:", isDuplicate("Water the plants"));
+// getSummary
+console.log(getSummary());          // Expected: "5 notes: 2 personal, 1 work, 2 study."
+notes.splice(1);                    // keep only the first note
+console.log(getSummary());          // Expected: "1 note: 1 personal."
+notes.splice(0);                    // empty the array
+console.log(getSummary());          // Expected: "0 notes."
+notes.push(...saved);               // restore all five notes
 
-console.log("--- addNote ---");
-console.log("addNote('Water the plants', 'personal') -> expect true:", addNote("Water the plants", "personal"));
-console.log("addNote('water the  plants', 'personal') -> expect false (duplicate):", addNote("water the  plants", "personal"));
-console.log("addNote('', 'work') -> expect false (empty):", addNote("", "work"));
-console.log("addNote(201 characters, 'work') -> expect false (too long):", addNote("a".repeat(201), "work"));
-console.log("addNote('Plan the sprint', 'hobby') -> expect false (bad category):", addNote("Plan the sprint", "hobby"));
-console.log("getSummary() after adding -> expect '6 notes: 3 personal, 1 work, 2 study.':", getSummary());
+// isDuplicate
+console.log(isDuplicate("  call THE   dentist "));  // Expected: true (ignores case and extra spaces)
+console.log(isDuplicate("Water the plants"));       // Expected: false (not in the list)
+console.log(isDuplicate("   "));                    // Expected: false (blank text)
+
+// addNote
+console.log(addNote("Water the plants", "personal"));        // Expected: true
+console.log(addNote("  water THE plants ", "personal"));     // Expected: false, logs "Not added: a note with this text already exists."
+console.log(addNote("", "work"));                            // Expected: false, logs "Not added: text must be 1-200 characters."
+console.log(addNote("a".repeat(201), "work"));               // Expected: false, logs "Not added: text must be 1-200 characters."
+console.log(addNote("Plan the sprint", "hobby"));            // Expected: false, logs "Not added: category must be personal, work or study."
+console.log(addNote("a".repeat(200), "study"));              // Expected: true (exactly 200 characters is allowed)
+console.log(getSummary());                                   // Expected: "7 notes: 3 personal, 1 work, 3 study."
