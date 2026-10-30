@@ -40,10 +40,14 @@ function applyFilter() {
   renderUsers(matches);
 
   if (allUsers.length > 0) {
-    statusEl.textContent =
-      matches.length === 0
-        ? "No users match your filter."
-        : "Showing " + matches.length + " of " + allUsers.length + " users.";
+    if (matches.length === 0) {
+      statusEl.textContent = "No users match your filter.";
+    } else if (text === "") {
+      statusEl.textContent = "Loaded " + allUsers.length + " users successfully.";
+    } else {
+      statusEl.textContent =
+        "Showing " + matches.length + " of " + allUsers.length + " users.";
+    }
   }
 }
 
@@ -59,8 +63,7 @@ async function loadUsers() {
     }
 
     allUsers = await response.json();
-    applyFilter(); // shows everything, or respects text already typed
-    statusEl.textContent = "Loaded " + allUsers.length + " users successfully.";
+    applyFilter(); // sets the success / filter message and draws the list
   } catch (error) {
     usersList.textContent = "";
     statusEl.textContent = "Error: could not load users. " + error.message;
