@@ -1,0 +1,7 @@
+# Day 8 Reflection
+
+**The most difficult concept.** The hardest idea for me was how a system behaves when many people act at the same moment: transactions, constraints and caching. At first, "check if the seat is free, then take it" looked correct to me, and I could not see where it could go wrong. It clicked when I walked through two users clicking at the same millisecond and saw that both checks could pass before either update. I overcame it by drawing the timeline step by step, then learning that a single conditional UPDATE inside a transaction, backed by a UNIQUE constraint, closes that gap. Doing the numbers (6 requests per second normally versus about 6,700 in a big sale) also made it real.
+
+**What I would improve in my capstone.** Based on the feedback I received, I would explain my diagram more simply, one request at a time, instead of listing every component. I would also add more detail on failure cases, such as what happens when the payment provider is slow or a server crashes halfway through an order, and I would justify my estimates by stating my assumptions more clearly.
+
+**What I will learn next.** I want to build a real backend for QuickNotes with Node.js and a SQL database, so I can turn my API and data model documents into working code. After that I want to learn authentication and security properly, then caching with Redis, and try deploying a small project to the cloud so I can see load balancing and monitoring in practice.
